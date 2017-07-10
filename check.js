@@ -8,7 +8,7 @@ ajaxfire
     .map(function(results, index){
         console.log('1 ajaxfire map', results, index);
     })
-    .error(function(error, xhr, results, index){
+    .catch(function(error, xhr, results, index){
         console.log('on error', error, xhr);
         return true;
     })
@@ -30,7 +30,7 @@ ajaxfire
     .map(function(results, index){
         console.log('1 ajaxfire map', results, index);
     })
-    .error(function(error, xhr, results, index){
+    .catch(function(error, xhr, results, index){
         console.log('on error', error, xhr);
         return true;
     })

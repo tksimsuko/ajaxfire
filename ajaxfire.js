@@ -4,13 +4,26 @@
  * Licensed under the MIT License:
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @param strategy (parallel or series) default parallel
- * @param ajaxParam 
+ * @param strategy  @optional @type string parallel or series / default parallel 
+ * @param ajaxParam @optional
 */
-function AjaxFire(strategy, ajaxParam){
+function AjaxFire(paramStrategy, ajaxParam){
+    var strategy = paramStrategy;
+    if(typeof(paramStrategy) === 'object'){
+        ajaxParam = paramStrategy;
+        strategy = 'parallel';
+    }
     var ajax = Ajax(ajaxParam);
 
     return {
+        series: function(){
+            strategy = 'series';
+            return this;
+        },
+        parallel: function(){
+            strategy = 'parallel';
+            return this;
+        },
         get: function(url, param){
             return generate().get(url, param)
         },
@@ -57,7 +70,7 @@ function AjaxFire(strategy, ajaxParam){
                                 xhr: xhr
                             };
 
-                            if(that.fire.error(error, xhr, results, index)){//TODO parallel でもstopする
+                            if(that.fire.error(error, xhr, results, index)){
                                 return;
                             }
                             each();
@@ -73,7 +86,7 @@ function AjaxFire(strategy, ajaxParam){
                 this.fire.onDone(callback);
                 return this;
             },
-            error: function(callback){// callback return true -> stop series processing //TODO parallel でもstopする
+            catch: function(callback){// callback return true -> stop series processing
                 this.fire.onError(callback);
                 return this;
             }

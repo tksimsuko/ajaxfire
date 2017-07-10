@@ -61,6 +61,3 @@ fire
             return true;//Ÿ‚Ö
         }
     });
-
-
-//interval series only
