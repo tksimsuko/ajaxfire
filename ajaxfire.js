@@ -40,7 +40,9 @@ function AjaxFire(strategy, ajaxParam){
                 this.fire.set(function(each, results, index){
                     var sendData = data;
                     if(typeof(data) === 'function'){
-                        sendData = data(results, index);//generate request data  from response data : series only
+                        //generate request data  from response data
+                        //series only
+                        sendData = data(results, index);
                     }
 
                     ajax
