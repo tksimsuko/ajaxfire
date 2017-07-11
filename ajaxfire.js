@@ -121,287 +121,253 @@ function AjaxFire(paramStrategy, ajaxProp){
             }
         }
     }
-}
-/*
- * Ajax
- * Copyright 2017 tksimsuko.
- * Licensed under the MIT License:
- * http://www.opensource.org/licenses/mit-license.php  
- * 
- * @param defaultProp
- *   headers - xhr request headers key value object
- *   requestType - request header Content-Type
- *   
- *   responseType - xhr propertie
- *   withCredentials - xhr propertie
- *   timeout - xhr propertie
- *   ontimeout - xhr propertie
- *   ※other　xhr properties are configuable
- *
- *@function
- *   get
- *   post
- *   send
- *
- * call after above function
- *   done
- *   fail
- *   abort
- * 
- * @activation object properties
- *   xhr
- * 
- * done called by 200/300 series status
- * fail called other than
-*/
-function Ajax(defaultProp){
-    return {
-        send: generate,
-        get: function(url, prop){
-            return generate('GET', url, null, prop);
-        },
-        post: function(url, data, prop){
-            return generate('POST', url, data, prop);
-        }
-    };
-    
-    ///// function
-    function generate(method, url, data, prop){
-        var ajaxInstance = instance();
-        if(defaultProp){
-            ajaxInstance.set(defaultProp);
-        }
-        if(prop){
-            ajaxInstance.set(prop);
-        }
-        return ajaxInstance.send(method, url, data);
-    }
-    ///// closure generator
-    function instance(){
+
+    /* Ajax */
+    function Ajax(defaultProp){
         return {
-            prop: {},
-            callback: {},
-            set: function(added){
-                if(!added){
+            send: generate,
+            get: function(url, prop){
+                return generate('GET', url, null, prop);
+            },
+            post: function(url, data, prop){
+                return generate('POST', url, data, prop);
+            }
+        };
+        
+        ///// function
+        function generate(method, url, data, prop){
+            var ajaxInstance = instance();
+            if(defaultProp){
+                ajaxInstance.set(defaultProp);
+            }
+            if(prop){
+                ajaxInstance.set(prop);
+            }
+            return ajaxInstance.send(method, url, data);
+        }
+        ///// closure generator
+        function instance(){
+            return {
+                prop: {},
+                callback: {},
+                set: function(added){
+                    if(!added){
+                        return this;
+                    }
+
+                    for(var key in added){
+                        this.prop[key] = added[key];
+                    }
+                    return this;
+                },
+                send: function(method, url, data){
+                    this.xhr = new XMLHttpRequest();
+
+                    var that = this;
+                    this.xhr.onreadystatechange = function(event){
+                        if(that.xhr.readyState === that.xhr.DONE){
+                            if(200 <= that.xhr.status && that.xhr.status < 400){//200 300 series status
+                                if(that.callback.onDone){
+                                    that.callback.onDone(that.xhr.response, that.xhr);
+                                }
+                            }else{
+                                if(that.callback.onFail){
+                                    that.callback.onFail(that.xhr);
+                                }
+                            }
+                        }
+                    };
+
+                    this.xhr.open(method, url);
+
+                    //set xhr prop
+                    for(var key in this.prop){
+                        if(key === 'headers'){
+                            for(var key in this.prop.headers){
+                                this.xhr.setRequestHeader(key, this.prop.headers[key]);
+                            }
+                            continue;
+                        }
+                        if(key === 'requestType'){
+                            this.xhr.setRequestHeader('Content-Type', this.prop.requestType);
+                            continue;
+                        }
+
+                        this.xhr[key] = this.prop[key];
+                    }
+
+                    if(typeof(data) === 'object'){
+                        data = JSON.stringify(data);
+                    }
+                    this.xhr.send(data);
+                    return this;
+                },
+                done: function(callback){
+                    if(callback){
+                        this.callback.onDone = callback;
+                    }
+                    return this;
+                },
+                fail: function(callback){
+                    if(callback){
+                        this.callback.onFail = callback;
+                    }
+                    return this;
+                },
+                abort: function(){
+                    if(this.xhr){
+                        this.xhr.abort();
+                    }
                     return this;
                 }
-
-                for(var key in added){
-                    this.prop[key] = added[key];
-                }
-                return this;
-            },
-            send: function(method, url, data){
-                this.xhr = new XMLHttpRequest();
-
-                var that = this;
-                this.xhr.onreadystatechange = function(event){
-                    if(that.xhr.readyState === that.xhr.DONE){
-                        if(200 <= that.xhr.status && that.xhr.status < 400){//200 300 series status
-                            if(that.callback.onDone){
-                                that.callback.onDone(that.xhr.response, that.xhr);
-                            }
-                        }else{
-                            if(that.callback.onFail){
-                                that.callback.onFail(that.xhr);
-                            }
-                        }
-                    }
-                };
-
-                this.xhr.open(method, url);
-
-                //set xhr prop
-                for(var key in this.prop){
-                    if(key === 'headers'){
-                        for(var key in this.prop.headers){
-                            this.xhr.setRequestHeader(key, this.prop.headers[key]);
-                        }
-                        continue;
-                    }
-                    if(key === 'requestType'){
-                        this.xhr.setRequestHeader('Content-Type', this.prop.requestType);
-                        continue;
-                    }
-
-                    this.xhr[key] = this.prop[key];
-                }
-
-                if(typeof(data) === 'object'){
-                    data = JSON.stringify(data);
-                }
-                this.xhr.send(data);
-                return this;
-            },
-            done: function(callback){
-                if(callback){
-                    this.callback.onDone = callback;
-                }
-                return this;
-            },
-            fail: function(callback){
-                if(callback){
-                    this.callback.onFail = callback;
-                }
-                return this;
-            },
-            abort: function(){
-                if(this.xhr){
-                    this.xhr.abort();
-                }
-                return this;
-            }
-        };
+            };
+        }
     }
-}
-/*
- * AsyncFire
- * Copyright 2017 tksimsuko.
- * Licensed under the MIT License:
- * http://www.opensource.org/licenses/mit-license.php  
-*/
-function AsyncFire(paramStrategy){
-    var strategy = paramStrategy || 'parallel';
-    return Flow(strategy);
-    
-    ////////// closure generator //////////
-    //Flow
-    // 処理を登録する
-    // 処理の実行・制御をStrategyFlowに依頼する
-    // instance - task, strategyFlow, set, start, each, done
-    function Flow(flowStrategy){
-        return {
-            set: function(func){
-                if(!this.task){
-                    this.task = new Task();
-                    this.strategyFlow = generateStrategyFlow(flowStrategy);
-                }
 
-                this.task.funcs.push(func);
-                this.strategyFlow.execute(this);
-
-                return this;
-            },
-            onEach: function(callback){
-                this.each = callback;
-                return this;
-            },
-            onDone: function(callback){
-                this.done = callback;
-                return this;
-            },
-            onError: function(callback){
-                this.error = callback;
-                return this;
-            }
-        };
-    }
-    //処理を実行・制御する
-    //並行処理フロー
-    // instance - flow, start, each, isDone
-    function ParallelFlow(){
-        var current = 0;
-        var doneCount = 0;
-
-        return {
-            execute: function(flow){
-                if(!this.flow){
-                    this.flow = flow;
-                }
-
-                this.executeByIndex(current);
-                current++;
-            },
-            executeByIndex(index){
-                var that = this;
-                this.flow.task.funcs[index](function(){
-                    that.each(that.flow.task.results, index);
-                }, that.flow.task.results, index);
-            },
-            each: function(results, index){
-                if(this.flow.each){
-                    this.flow.each(results, index);
-                }
-                
-                //終了判定
-                doneCount++;
-                if(this.isDone() && this.flow.done){
-                    this.flow.done(this.flow.task.results);
-                }
-            },
-            isDone: function(){
-                return doneCount === this.flow.task.funcs.length;
-            }
-        };
-    }
-    //処理を実行・制御する
-    //直列処理フロー
-    //次へ進む場合はnextを呼ばなければならない
-    // instance - flow, start, next, isDone
-    function SeriesFlow(){
-        var current = 0;
-        var doneCount = 0;
-
-        return {
-            execute: function(flow){
-                if(!this.flow){
-                    this.flow = flow;
-                }
-                if(this.isWaiting()){
-                    return;
-                }
-
-                this.next();
-            },
-            executeByIndex: function(index){
-                var that = this;
-                this.flow.task.funcs[index](function(){
-                    if(that.flow.each){
-                        that.flow.each(that.flow.task.results, index);
+    /* AsyncFire */
+    function AsyncFire(paramStrategy){
+        var strategy = paramStrategy || 'parallel';
+        return Flow(strategy);
+        
+        ////////// closure generator //////////
+        //Flow
+        // 処理を登録する
+        // 処理の実行・制御をStrategyFlowに依頼する
+        // instance - task, strategyFlow, set, start, each, done
+        function Flow(flowStrategy){
+            return {
+                set: function(func){
+                    if(!this.task){
+                        this.task = new Task();
+                        this.strategyFlow = generateStrategyFlow(flowStrategy);
                     }
+
+                    this.task.funcs.push(func);
+                    this.strategyFlow.execute(this);
+
+                    return this;
+                },
+                onEach: function(callback){
+                    this.each = callback;
+                    return this;
+                },
+                onDone: function(callback){
+                    this.done = callback;
+                    return this;
+                },
+                onError: function(callback){
+                    this.error = callback;
+                    return this;
+                }
+            };
+        }
+        //処理を実行・制御する
+        //並行処理フロー
+        // instance - flow, start, each, isDone
+        function ParallelFlow(){
+            var current = 0;
+            var doneCount = 0;
+
+            return {
+                execute: function(flow){
+                    if(!this.flow){
+                        this.flow = flow;
+                    }
+
+                    this.executeByIndex(current);
+                    current++;
+                },
+                executeByIndex(index){
+                    var that = this;
+                    this.flow.task.funcs[index](function(){
+                        that.each(that.flow.task.results, index);
+                    }, that.flow.task.results, index);
+                },
+                each: function(results, index){
+                    if(this.flow.each){
+                        this.flow.each(results, index);
+                    }
+                    
+                    //終了判定
                     doneCount++;
-
-                    that.next();
-                }, that.flow.task.results, index);
-            },
-            next: function(){
-                //終了判定
-                if(this.isDone()){
-                    if(this.flow.done){
+                    if(this.isDone() && this.flow.done){
                         this.flow.done(this.flow.task.results);
                     }
-                    return;
+                },
+                isDone: function(){
+                    return doneCount === this.flow.task.funcs.length;
                 }
+            };
+        }
+        //処理を実行・制御する
+        //直列処理フロー
+        //次へ進む場合はnextを呼ばなければならない
+        // instance - flow, start, next, isDone
+        function SeriesFlow(){
+            var current = 0;
+            var doneCount = 0;
 
-                //処理実行
-                this.executeByIndex(current);
-                current++;
-            },
-            isWaiting: function(){
-                return current != doneCount;
-            },
-            isDone: function(){
-                return doneCount === this.flow.task.funcs.length;
+            return {
+                execute: function(flow){
+                    if(!this.flow){
+                        this.flow = flow;
+                    }
+                    if(this.isWaiting()){
+                        return;
+                    }
+
+                    this.next();
+                },
+                executeByIndex: function(index){
+                    var that = this;
+                    this.flow.task.funcs[index](function(){
+                        if(that.flow.each){
+                            that.flow.each(that.flow.task.results, index);
+                        }
+                        doneCount++;
+
+                        that.next();
+                    }, that.flow.task.results, index);
+                },
+                next: function(){
+                    //終了判定
+                    if(this.isDone()){
+                        if(this.flow.done){
+                            this.flow.done(this.flow.task.results);
+                        }
+                        return;
+                    }
+
+                    //処理実行
+                    this.executeByIndex(current);
+                    current++;
+                },
+                isWaiting: function(){
+                    return current != doneCount;
+                },
+                isDone: function(){
+                    return doneCount === this.flow.task.funcs.length;
+                }
+            };
+        }
+        //Task
+        //一纏まりの処理
+        function Task(){
+            return {
+                funcs: [],
+                results: {}
+            };
+        }
+        ///// function
+        function generateStrategyFlow(strategy){
+            switch(strategy){
+                case 'parallel':
+                    return ParallelFlow();
+                case 'series':
+                    return SeriesFlow();
+                default:
+                    break;
             }
-        };
-    }
-    //Task
-    //一纏まりの処理
-    function Task(){
-        return {
-            funcs: [],
-            results: {}
-        };
-    }
-    ///// function
-    function generateStrategyFlow(strategy){
-        switch(strategy){
-            case 'parallel':
-                return ParallelFlow();
-            case 'series':
-                return SeriesFlow();
-            default:
-                break;
         }
     }
 }
