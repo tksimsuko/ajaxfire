@@ -4,53 +4,74 @@
  * Licensed under the MIT License:
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @param strategy  @optional @type string parallel or series / default parallel 
- * @param ajaxParam @optional
+ * @param strategy optional  parallel or series / default parallel 
+ * @param ajaxProp optional
 */
-function AjaxFire(paramStrategy, ajaxParam){
-    var strategy = paramStrategy;
+function AjaxFire(paramStrategy, ajaxProp){
+    var tempStrategy = paramStrategy;
     if(typeof(paramStrategy) === 'object'){
-        ajaxParam = paramStrategy;
-        strategy = 'parallel';
+        ajaxProp = paramStrategy;
+        tempStrategy = 'parallel';
     }
-    var ajax = Ajax(ajaxParam);
+    var ajax = Ajax(ajaxProp);
 
     return {
-        series: function(){
-            strategy = 'series';
-            return this;
+        series: function(ary){
+            //none
+            if(!ary){
+                return generate('series');
+            }
+            //object array
+            if(typeof(ary) === 'object'){
+                 return generate('series').array(ary);
+            }
+            //url string array
+            var list = Array.prototype.slice.call(arguments);
+            return generate('series').array(list);
         },
-        parallel: function(){
-            strategy = 'parallel';
-            return this;
+        parallel: function(ary){
+            //none
+            if(!ary){
+                return generate('parallel');
+            }
+            //object array
+            if(typeof(ary) === 'object'){
+                 return generate('parallel').array(ary);
+            }
+            //url string array
+            var list = Array.prototype.slice.call(arguments);
+            return generate('parallel').array(list);
         },
         get: function(url, param){
-            return generate().get(url, param)
+            return generate(tempStrategy).get(url, param);
         },
         post: function(url, data, param){
-            return generate().post(url, data, param)
+            return generate(tempStrategy).post(url, data, param);
         },
         send: function(method, url, data, param){
-            return generate().send(method, url, data, param);
+            return generate(tempStrategy).send(method, url, data, param);
         }
     };
 
-    ////////// clousure generator //////////
-    function generate(){
+    ////////// closure generator //////////
+    function generate(fireStrategy){
         return {
-            get: function(url, param){
-                return this.send('GET', url, null, param);
+            get: function(url, prop){
+                return this.send('GET', url, null, prop);
             },
-            post: function(url, data, param){
-                return this.send('POST', url, data, param);
+            post: function(url, data, prop){
+                return this.send('POST', url, data, prop);
             },
-            send: function(method, url, data, param){
+            send: function(method, url, data, prop){
                 if(!this.fire){
-                    this.fire = AsyncFire(strategy);
+                    this.fire = AsyncFire(fireStrategy);
                 }
 
                 var that = this;
                 this.fire.set(function(each, results, index){
+                    if(!method){
+                        method = 'GET';//default method GET
+                    }
                     var sendData = data;
                     if(typeof(data) === 'function'){
                         //generate request data  from response data
@@ -59,22 +80,30 @@ function AjaxFire(paramStrategy, ajaxParam){
                     }
 
                     ajax
-                        .send(method, url, sendData, param)
+                        .send(method, url, sendData, prop)
                         .done(function(data, xhr){
                             results[index] = data;
                             each();
                         })
-                        .fail(function(error, xhr){
-                            results[index] = {//TODO エラーに必要な項目の精査
-                                error: error,
-                                xhr: xhr
-                            };
-
-                            if(that.fire.error(error, xhr, results, index)){
+                        .fail(function(xhr){
+                            results[index] = xhr;
+                            if(that.fire.error(xhr, results, index)){
                                 return;
                             }
                             each();
                         });
+                });
+                return this;
+            },
+            array: function(ary){
+                var that = this;
+                ary.forEach(function(ajaxObject, index){
+                    if(typeof(ajaxObject) === 'object'){
+                        that.send(ajaxObject.method, ajaxObject.url, ajaxObject.data, ajaxObject.prop);
+                    }else if(typeof(ajaxObject) === 'string'){
+                        that.send('GET', ajaxObject);
+                    }
+                    
                 });
                 return this;
             },
@@ -99,17 +128,17 @@ function AjaxFire(paramStrategy, ajaxParam){
  * Licensed under the MIT License:
  * http://www.opensource.org/licenses/mit-license.php  
  * 
- * @param
- *   headers
- *   requestType
- *   responseType
- *   withCredentials
- *   timeout
- *   onTimeout
- *   onDone
- *   onFail
+ * @param defaultProp
+ *   headers - xhr request headers key value object
+ *   requestType - request header Content-Type
+ *   
+ *   responseType - xhr propertie
+ *   withCredentials - xhr propertie
+ *   timeout - xhr propertie
+ *   ontimeout - xhr propertie
+ *   ※other　xhr properties are configuable
  *
- * @function
+ *@function
  *   get
  *   post
  *   send
@@ -125,32 +154,33 @@ function AjaxFire(paramStrategy, ajaxParam){
  * done called by 200/300 series status
  * fail called other than
 */
-function Ajax(defaultParam){
+function Ajax(defaultProp){
     return {
         send: generate,
-        get: function(url, param){
-            return generate('GET', url, null, param);
+        get: function(url, prop){
+            return generate('GET', url, null, prop);
         },
-        post: function(url, data, param){
-            return generate('POST', url, data, param);
+        post: function(url, data, prop){
+            return generate('POST', url, data, prop);
         }
     };
     
     ///// function
-    function generate(method, url, data, param){
+    function generate(method, url, data, prop){
         var ajaxInstance = instance();
-        if(defaultParam){
-            ajaxInstance.set(defaultParam);
+        if(defaultProp){
+            ajaxInstance.set(defaultProp);
         }
-        if(param){
-            ajaxInstance.set(param);
+        if(prop){
+            ajaxInstance.set(prop);
         }
         return ajaxInstance.send(method, url, data);
     }
-    ///// clousure generator
-    function instance(method, url, data){
+    ///// closure generator
+    function instance(){
         return {
             prop: {},
+            callback: {},
             set: function(added){
                 if(!added){
                     return this;
@@ -168,12 +198,12 @@ function Ajax(defaultParam){
                 this.xhr.onreadystatechange = function(event){
                     if(that.xhr.readyState === that.xhr.DONE){
                         if(200 <= that.xhr.status && that.xhr.status < 400){//200 300 series status
-                            if(that.prop.onDone){
-                                that.prop.onDone(that.xhr.response, that.xhr);
+                            if(that.callback.onDone){
+                                that.callback.onDone(that.xhr.response, that.xhr);
                             }
                         }else{
-                            if(that.prop.onFail){
-                                that.prop.onFail(event, that.xhr);
+                            if(that.callback.onFail){
+                                that.callback.onFail(that.xhr);
                             }
                         }
                     }
@@ -181,25 +211,20 @@ function Ajax(defaultParam){
 
                 this.xhr.open(method, url);
 
-                if(this.prop.headers){
-                    for(var key in this.prop.headers){
-                        this.xhr.setRequestHeader(key, this.prop.headers[key]);
+                //set xhr prop
+                for(var key in this.prop){
+                    if(key === 'headers'){
+                        for(var key in this.prop.headers){
+                            this.xhr.setRequestHeader(key, this.prop.headers[key]);
+                        }
+                        continue;
                     }
-                }
-                if(this.prop.requestType){
-                    this.xhr.setRequestHeader('Content-Type', this.prop.requestType);
-                }
-                if(this.prop.responseType){
-                    this.xhr.responseType = this.prop.responseType;
-                }
-                if(this.prop.withCredentials){
-                    this.xhr.withCredentials = true;
-                }
-                if(this.prop.timeout){
-                    this.xhr.timeout = this.prop.timeout;
-                }
-                if(this.prop.onTimeout){
-                    this.xhr.ontimeout = this.prop.onTimeout;
+                    if(key === 'requestType'){
+                        this.xhr.setRequestHeader('Content-Type', this.prop.requestType);
+                        continue;
+                    }
+
+                    this.xhr[key] = this.prop[key];
                 }
 
                 if(typeof(data) === 'object'){
@@ -210,13 +235,13 @@ function Ajax(defaultParam){
             },
             done: function(callback){
                 if(callback){
-                    this.prop.onDone = callback;
+                    this.callback.onDone = callback;
                 }
                 return this;
             },
             fail: function(callback){
                 if(callback){
-                    this.prop.onFail = callback;
+                    this.callback.onFail = callback;
                 }
                 return this;
             },
@@ -239,7 +264,7 @@ function AsyncFire(paramStrategy){
     var strategy = paramStrategy || 'parallel';
     return Flow(strategy);
     
-    ////////// clousure generator //////////
+    ////////// closure generator //////////
     //Flow
     // 処理を登録する
     // 処理の実行・制御をStrategyFlowに依頼する
