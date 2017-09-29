@@ -6,10 +6,12 @@
  *
  * @param strategy optional  parallel or series / default parallel 
  * @param ajaxProp optional
+ * @param commonHandler (each / done / catch) optional
 */
-function AjaxFire(paramStrategy, ajaxProp){
+function AjaxFire(paramStrategy, ajaxProp, commonHandler){
     var tempStrategy = paramStrategy;
     if(typeof(paramStrategy) === 'object'){
+        commonHandler = ajaxProp;
         ajaxProp = paramStrategy;
         tempStrategy = 'parallel';
     }
@@ -87,7 +89,7 @@ function AjaxFire(paramStrategy, ajaxProp){
                         })
                         .fail(function(xhr){
                             results[index] = xhr;
-                            if(that.fire.error(xhr, results, index)){
+                            if(that.fire.error && that.fire.error(xhr, results, index)){
                                 return;
                             }
                             each();
@@ -247,6 +249,9 @@ function AjaxFire(paramStrategy, ajaxProp){
 
                     return this;
                 },
+                each: commonHandler.each,
+                done: commonHandler.done,
+                error: commonHandler.catch,
                 onEach: function(callback){
                     this.each = callback;
                     return this;
@@ -291,7 +296,11 @@ function AjaxFire(paramStrategy, ajaxProp){
                     //終了判定
                     doneCount++;
                     if(this.isDone() && this.flow.done){
-                        this.flow.done(this.flow.task.results);
+                        if(this.flow.task.results.length === 1){
+                            this.flow.done(this.flow.task.results[0]);
+                        }else{
+                            this.flow.done(this.flow.task.results);
+                        }
                     }
                 },
                 isDone: function(){
@@ -333,7 +342,11 @@ function AjaxFire(paramStrategy, ajaxProp){
                     //終了判定
                     if(this.isDone()){
                         if(this.flow.done){
-                            this.flow.done(this.flow.task.results);
+                            if(this.flow.task.results.length === 1){
+                                this.flow.done(this.flow.task.results[0]);
+                            }else{
+                                this.flow.done(this.flow.task.results);
+                            }
                         }
                         return;
                     }
