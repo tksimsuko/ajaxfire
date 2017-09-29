@@ -237,6 +237,16 @@ function AjaxFire(paramStrategy, ajaxProp, commonHandler){
         // 処理の実行・制御をStrategyFlowに依頼する
         // instance - task, strategyFlow, set, start, each, done
         function Flow(flowStrategy){
+            let each;
+            let done;
+            let error;
+
+            if(commonHandler){
+                each = commonHandler.each;
+                done = commonHandler.done;
+                error = commonHandler.catch;
+            }
+
             return {
                 set: function(func){
                     if(!this.task){
@@ -249,9 +259,9 @@ function AjaxFire(paramStrategy, ajaxProp, commonHandler){
 
                     return this;
                 },
-                each: commonHandler.each,
-                done: commonHandler.done,
-                error: commonHandler.catch,
+                each: each,
+                done: done,
+                error: error,
                 onEach: function(callback){
                     this.each = callback;
                     return this;
