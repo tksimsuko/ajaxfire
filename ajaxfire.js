@@ -6,9 +6,9 @@
  *
  * @param strategy optional  parallel or series / default parallel 
  * @param ajaxProp optional
- * @param commonHandler (each / done / catch) optional
+ * @param flowHandler (each / done / catch) optional
 */
-function AjaxFire(paramStrategy, ajaxProp, commonHandler){
+function AjaxFire(paramStrategy, ajaxProp, flowHandler){
     var tempStrategy = paramStrategy;
     if(typeof(paramStrategy) === 'object'){
         commonHandler = ajaxProp;
@@ -89,6 +89,7 @@ function AjaxFire(paramStrategy, ajaxProp, commonHandler){
                         })
                         .fail(function(xhr){
                             results[index] = xhr;
+                            that.fire.hasError = true;
                             if(that.fire.error && that.fire.error(xhr, results, index)){
                                 return;
                             }
@@ -107,6 +108,14 @@ function AjaxFire(paramStrategy, ajaxProp, commonHandler){
                     }
                     
                 });
+                return this;
+            },
+            success: function(callback){
+                this.fire.onSuccess(callback);
+                return this;
+            },
+            fail: function(callback){
+                this.fire.onFail(callback);
                 return this;
             },
             map: function(callback){
@@ -237,14 +246,18 @@ function AjaxFire(paramStrategy, ajaxProp, commonHandler){
         // 処理の実行・制御をStrategyFlowに依頼する
         // instance - task, strategyFlow, set, start, each, done
         function Flow(flowStrategy){
-            let each;
+            let success;
+            let fail;
+            let map;
             let done;
             let error;
 
-            if(commonHandler){
-                each = commonHandler.each;
-                done = commonHandler.done;
-                error = commonHandler.catch;
+            if(flowHandler){
+                success = flowHandler.success;
+                fail = flowHandler.fail;
+                map = flowHandler.map;
+                done = flowHandler.done;
+                error = flowHandler.catch;
             }
 
             return {
@@ -259,9 +272,19 @@ function AjaxFire(paramStrategy, ajaxProp, commonHandler){
 
                     return this;
                 },
-                each: each,
-                done: done,
+                success: success,
+                fail: fail,
+                each: map,
                 error: error,
+                done: done,
+                onSuccess: function(callback){
+                    this.success = callback;
+                    return this;
+                },
+                onFail: function(callback){
+                    this.fail = callback;
+                    return this;
+                },
                 onEach: function(callback){
                     this.each = callback;
                     return this;
@@ -273,7 +296,8 @@ function AjaxFire(paramStrategy, ajaxProp, commonHandler){
                 onError: function(callback){
                     this.error = callback;
                     return this;
-                }
+                },
+                hasError: false
             };
         }
         //処理を実行・制御する
@@ -305,11 +329,22 @@ function AjaxFire(paramStrategy, ajaxProp, commonHandler){
                     
                     //終了判定
                     doneCount++;
-                    if(this.isDone() && this.flow.done){
-                        if(this.flow.task.results.length === 1){
-                            this.flow.done(this.flow.task.results[0]);
+                    if(this.isDone()){
+                        if(!this.flow.hasError){
+                            //success
+                            if(this.flow.success){
+                                this.flow.success(getResult(this.flow));
+                            }
                         }else{
-                            this.flow.done(this.flow.task.results);
+                            //fail
+                            if(this.flow.fail){
+                                this.flow.fail(getResult(this.flow));
+                            }
+                        }
+
+                        if(this.flow.done){
+                            //done
+                            this.flow.done(getResult(this.flow));
                         }
                     }
                 },
@@ -360,6 +395,25 @@ function AjaxFire(paramStrategy, ajaxProp, commonHandler){
                         }
                         return;
                     }
+                    if(this.isDone()){
+                        if(!this.flow.hasError){
+                            //success
+                            if(this.flow.success){
+                                this.flow.success(getResult(this.flow));
+                            }
+                        }else{
+                            //fail
+                            if(this.flow.fail){
+                                this.flow.fail(getResult(this.flow));
+                            }
+                        }
+
+                        if(this.flow.done){
+                            //done
+                            this.flow.done(getResult(this.flow));
+                        }
+                        return;
+                    }
 
                     //処理実行
                     this.executeByIndex(current);
@@ -390,6 +444,13 @@ function AjaxFire(paramStrategy, ajaxProp, commonHandler){
                     return SeriesFlow();
                 default:
                     break;
+            }
+        }
+        function getResult(flow){
+            if(flow.task.results.length === 1){
+                return flow.task.results[0];
+            }else{
+                return flow.task.results;
             }
         }
     }
