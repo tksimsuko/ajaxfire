@@ -6,7 +6,7 @@
  *
  * @param strategy optional  parallel or series / default parallel 
  * @param ajaxProp optional
- * @param flowHandler (each / done / catch) optional
+ * @param flowHandler (success / fail / each / done / catch) optional
 */
 function AjaxFire(paramStrategy, ajaxProp, flowHandler){
     var tempStrategy = paramStrategy;
