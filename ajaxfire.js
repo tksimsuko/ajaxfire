@@ -337,13 +337,13 @@ function AjaxFire(paramStrategy, ajaxProp, flowHandler){
                         }else{
                             //fail
                             if(this.flow.fail){
-                                this.flow.fail(getResult(this.flow), , this.flow.task.results);
+                                this.flow.fail(getResult(this.flow), this.flow.task.results);
                             }
                         }
 
                         if(this.flow.done){
                             //done
-                            this.flow.done(getResult(this.flow), , this.flow.task.results);
+                            this.flow.done(getResult(this.flow), this.flow.task.results);
                         }
                     }
                 },
@@ -388,18 +388,18 @@ function AjaxFire(paramStrategy, ajaxProp, flowHandler){
                         if(!this.flow.hasError){
                             //success
                             if(this.flow.success){
-                                this.flow.success(getResult(this.flow), , this.flow.task.results);
+                                this.flow.success(getResult(this.flow), this.flow.task.results);
                             }
                         }else{
                             //fail
                             if(this.flow.fail){
-                                this.flow.fail(getResult(this.flow), , this.flow.task.results);
+                                this.flow.fail(getResult(this.flow), this.flow.task.results);
                             }
                         }
 
                         if(this.flow.done){
                             //done
-                            this.flow.done(getResult(this.flow), , this.flow.task.results);
+                            this.flow.done(getResult(this.flow), this.flow.task.results);
                         }
                         return;
                     }
