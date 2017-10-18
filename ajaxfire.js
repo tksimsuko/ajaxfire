@@ -6,7 +6,7 @@
  *
  * @param strategy optional  parallel or series / default parallel 
  * @param ajaxProp optional
- * @param flowHandler optional  success / fail / map / done / catch
+ * @param flowHandler (success / fail / map / done / catch) optional
 */
 function AjaxFire(paramStrategy, ajaxProp, flowHandler){
     var tempStrategy = paramStrategy;
@@ -40,7 +40,6 @@ function AjaxFire(paramStrategy, ajaxProp, flowHandler){
             if(typeof(ary) === 'object'){
                  return generate('parallel').array(ary);
             }
-            //url string array
             var list = Array.prototype.slice.call(arguments);
             return generate('parallel').array(list);
         },
@@ -333,18 +332,18 @@ function AjaxFire(paramStrategy, ajaxProp, flowHandler){
                         if(!this.flow.hasError){
                             //success
                             if(this.flow.success){
-                                this.flow.success(getResult(this.flow));
+                                this.flow.success(getResult(this.flow), this.flow.task.results);
                             }
                         }else{
                             //fail
                             if(this.flow.fail){
-                                this.flow.fail(getResult(this.flow));
+                                this.flow.fail(getResult(this.flow), , this.flow.task.results);
                             }
                         }
 
                         if(this.flow.done){
                             //done
-                            this.flow.done(getResult(this.flow));
+                            this.flow.done(getResult(this.flow), , this.flow.task.results);
                         }
                     }
                 },
@@ -386,31 +385,21 @@ function AjaxFire(paramStrategy, ajaxProp, flowHandler){
                 next: function(){
                     //終了判定
                     if(this.isDone()){
-                        if(this.flow.done){
-                            if(this.flow.task.results.length === 1){
-                                this.flow.done(this.flow.task.results[0]);
-                            }else{
-                                this.flow.done(this.flow.task.results);
-                            }
-                        }
-                        return;
-                    }
-                    if(this.isDone()){
                         if(!this.flow.hasError){
                             //success
                             if(this.flow.success){
-                                this.flow.success(getResult(this.flow));
+                                this.flow.success(getResult(this.flow), , this.flow.task.results);
                             }
                         }else{
                             //fail
                             if(this.flow.fail){
-                                this.flow.fail(getResult(this.flow));
+                                this.flow.fail(getResult(this.flow), , this.flow.task.results);
                             }
                         }
 
                         if(this.flow.done){
                             //done
-                            this.flow.done(getResult(this.flow));
+                            this.flow.done(getResult(this.flow), , this.flow.task.results);
                         }
                         return;
                     }
@@ -432,7 +421,7 @@ function AjaxFire(paramStrategy, ajaxProp, flowHandler){
         function Task(){
             return {
                 funcs: [],
-                results: {}
+                results: []
             };
         }
         ///// function
