@@ -11,7 +11,7 @@
 function AjaxFire(paramStrategy, ajaxProp, flowHandler){
     var tempStrategy = paramStrategy;
     if(typeof(paramStrategy) === 'object'){
-        commonHandler = ajaxProp;
+        flowHandler = ajaxProp;
         ajaxProp = paramStrategy;
         tempStrategy = 'parallel';
     }
